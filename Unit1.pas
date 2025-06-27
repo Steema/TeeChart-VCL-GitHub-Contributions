@@ -70,27 +70,12 @@ procedure TForm1.BGetContributionsClick(Sender: TObject);
 var
   iterator:     TJSONIterator;
   years:        TJSONArray;
-  fileContents: TStringList;
 begin
   Screen.Cursor := crHourGlass;
   CBYears.Enabled := False;
   CBYears.Clear;
 
-  fileContents := TStringList.Create;
-  if FileExists(EUsername.Text + '.json') then
-  begin
-    fileContents.LoadFromFile(EUsername.Text + '.json', TEncoding.UTF8);
-
-    gitHubContributions := TJSONObject.ParseJSONValue(TEncoding.ASCII.GetBytes(fileContents.Text), 0) as TJSONObject;
-  end
-  else
-  begin
-    gitHubContributions := GetGitHubContributions(EUsername.Text);
-
-    // Save to .json file
-    fileContents.Text := gitHubContributions.Format(2);
-    fileContents.SaveToFile(EUsername.Text + '.json', TEncoding.UTF8);
-  end;
+  gitHubContributions := GetGitHubContributions(EUsername.Text);
 
   if not gitHubContributions.TryGetValue<TJSONArray>('years', years) then
     Exit;
