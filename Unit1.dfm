@@ -19,7 +19,6 @@ object Form1: TForm1
     Height = 44
     Align = alTop
     TabOrder = 0
-    ExplicitWidth = 810
     object LUsername: TLabel
       Left = 8
       Top = 13
@@ -43,6 +42,15 @@ object Form1: TForm1
       TabOrder = 1
       OnClick = BGetContributionsClick
     end
+    object BTheme: TButton
+      Left = 776
+      Top = 9
+      Width = 41
+      Height = 25
+      Caption = 'Dark'
+      TabOrder = 2
+      OnClick = BThemeClick
+    end
   end
   object Panel2: TPanel
     Left = 0
@@ -51,7 +59,6 @@ object Form1: TForm1
     Height = 69
     Align = alTop
     TabOrder = 1
-    ExplicitWidth = 810
     object LFirstDayWeek: TLabel
       Left = 8
       Top = 38
@@ -151,7 +158,6 @@ object Form1: TForm1
     Align = alClient
     Color = clWhite
     TabOrder = 2
-    ExplicitWidth = 810
     DefaultCanvas = 'TGDIPlusCanvas'
     ColorPaletteIndex = 13
     object Series1: TPointSeries

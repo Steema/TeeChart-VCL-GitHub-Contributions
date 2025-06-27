@@ -9,7 +9,8 @@ uses
   System.Net.HttpClient, System.Net.HttpClientComponent,
   System.JSON, System.JSON.Readers, System.JSON.Types, System.JSON.Builders,
   Vcl.StdCtrls, Vcl.ExtCtrls, VCLTee.TeEngine, VCLTee.TeeProcs, VCLTee.Chart,
-  VCLTee.TeeSurfa, VCLTee.Series, VCLTee.TeeTools;
+  VCLTee.TeeSurfa, VCLTee.Series, VCLTee.TeeTools,
+  Themes;
 
 type
   TForm1 = class(TForm)
@@ -25,12 +26,15 @@ type
     LFirstDayWeek: TLabel;
     LUsername: TLabel;
     Label1: TLabel;
+    BTheme: TButton;
     procedure FormCreate(Sender: TObject);
     procedure BGetContributionsClick(Sender: TObject);
     procedure CBYearsChange(Sender: TObject);
     procedure CBFirstDayOfWeekChange(Sender: TObject);
+    procedure BThemeClick(Sender: TObject);
   private
     { Private declarations }
+    procedure DrawChart;
   public
     { Public declarations }
   end;
@@ -46,6 +50,7 @@ var
   gitHubContributions: TJSONObject;
   monthTitles: TArray<TAnnotationTool>;
   dayTitles: TArray<TAnnotationTool>;
+  currentTheme: TTheme;
 
 function DownloadWeb(aURL: string): string;
 var httpClient: TNetHTTPClient;
@@ -114,11 +119,6 @@ begin
   end;
 end;
 
-procedure TForm1.CBFirstDayOfWeekChange(Sender: TObject);
-begin
-  CBYearsChange(Sender);
-end;
-
 procedure CustomWeekDayOfTheYear(ADate: TDateTime; AFirstDayOfWeek: Integer; var AWeek, ADay: Integer);
 var
   tmpYear: Word;
@@ -142,16 +142,51 @@ begin
   end;
 end;
 
-procedure TForm1.CBYearsChange(Sender: TObject);
+procedure TForm1.BThemeClick(Sender: TObject);
+begin
+  if BTheme.Caption = 'Dark' then
+  begin
+    currentTheme:=GithubDarkTheme;
+    BTheme.Caption:='Light';
+  end
+  else
+  begin
+    currentTheme:=StandardTheme;
+    BTheme.Caption:='Dark';
+  end;
+
+  Self.Color:=currentTheme.Background;
+  Self.Font.Color:=currentTheme.Text;
+  EUsername.Color:=currentTheme.Background;
+  CBYears.Color:=currentTheme.Background;
+  CBFirstDayOfWeek.Color:=currentTheme.Background;
+
+  Chart1.Color:=currentTheme.Background;
+
+  for var i:=0 to High(monthTitles) do
+    monthTitles[i].Shape.Font.Color:=currentTheme.Text;
+
+  for var i:=0 to High(dayTitles) do
+    dayTitles[i].Shape.Font.Color:=currentTheme.Text;
+
+  DrawChart;
+end;
+
+function IntensityThemeColor(AIntensity: Integer): TColor;
+begin
+  Result:=currentTheme.Grades[AIntensity];
+end;
+
+procedure TForm1.DrawChart;
 var
   targetYear,
   tmpWeek,
-  tmpDay: Integer;
+  tmpDay,
+  tmpIntensity: Integer;
   tmpYear: Word;
   tmpDate: TDateTime;
-  tmpCount: Double;
   tmpDateStr,
-  tmpColorStr: string;
+  tmpIntensityStr: string;
   contributions: TJSONArray;
   iterator: TJSONIterator;
   tmpFormatSettings: TFormatSettings;
@@ -176,21 +211,13 @@ begin
     iterator.Recurse;
 
     tmpDateStr := '';
-    tmpCount := 0;
-    tmpColorStr := '';
+    tmpIntensityStr := '';
     while iterator.Next do
     begin
       if iterator.Key = 'date' then
         tmpDateStr := iterator.AsString
-      else if iterator.Key = 'count' then
-        tmpCount := iterator.AsDouble
-      else if iterator.Key = 'color' then
-      begin
-        tmpColorStr := iterator.AsString;
-
-        if tmpDateStr <> '' then
-          Break;
-      end;
+      else if iterator.Key = 'intensity' then
+        tmpIntensityStr := iterator.AsString;
     end;
 
     iterator.Return;
@@ -199,12 +226,16 @@ begin
        not TryStrToDate(tmpDateStr, tmpDate, tmpFormatSettings) then
       Continue;
 
+    if (tmpIntensityStr = '') or
+       not TryStrToInt(tmpIntensityStr, tmpIntensity) then
+      Continue;
+
     if YearOf(tmpDate) <> targetYear then
       Continue;
 
     CustomWeekDayOfTheYear(tmpDate, CBFirstDayOfWeek.ItemIndex, tmpWeek, tmpDay);
 
-    Series1.AddXY(tmpWeek, 7-tmpDay, FormatMark(tmpDate), StringToColor(tmpColorStr));
+    Series1.AddXY(tmpWeek, 7-tmpDay, FormatMark(tmpDate), IntensityThemeColor(tmpIntensity));
   end;
 
   Series1.Visible := True;
@@ -239,6 +270,16 @@ begin
       Top:=Chart1.Axes.Left.CalcPosValue(6-(d*2) -1) - Abs(Font.Height div 2);
     end;
   end;
+end;
+
+procedure TForm1.CBFirstDayOfWeekChange(Sender: TObject);
+begin
+  CBYearsChange(Sender);
+end;
+
+procedure TForm1.CBYearsChange(Sender: TObject);
+begin
+  DrawChart;
 end;
 
 procedure TForm1.FormCreate(Sender: TObject);
@@ -276,6 +317,9 @@ begin
     dayTitles[i].Active := False;
   end;
 end;
+
+initialization
+  CurrentTheme := StandardTheme;
 
 end.
 
